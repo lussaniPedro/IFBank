@@ -1,0 +1,76 @@
+services:
+  # 1. Serviço da Aplicação Laravel (PHP)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ifbank_app
+    restart: unless-stopped
+    ports:
+      - "16000:16000" # Acessar a aplicação em http://localhost:16000
+    volumes:
+      - .:/app # Sincroniza o código da sua máquina com o container
+      # A linha entrypoint foi removida, pois o ENTRYPOINT será definido no Dockerfile
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:16000
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=ifbank_db
+      - DB_USERNAME=ifbank_user
+      - DB_PASSWORD=secret_password
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:16000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  vite:
+    image: node:22-alpine
+    container_name: ifbank_vite
+    working_dir: /app
+    ports:
+    - "5173:5173"
+    volumes:
+    - .:/app
+    command: sh -c "npm install && npm run dev -- --host"
+  # 2. Serviço do Banco de Dados (MySQL )
+  db:
+    image: mysql:8.0
+    container_name: ifbank_db
+    restart: unless-stopped
+    ports:
+      - "16002:3306"
+    environment:
+      MYSQL_DATABASE: ifbank_db
+      MYSQL_USER: ifbank_user
+      MYSQL_PASSWORD: secret_password
+      MYSQL_ROOT_PASSWORD: root_password
+    volumes:
+      - mysql_data:/var/lib/mysql # Garante que os dados não sumam ao desligar o container
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # 3. Serviço do phpMyAdmin (Interface visual para o MySQL)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: ifbank_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "16001:80" # Acessar o phpMyAdmin em http://localhost:8080
+    environment:
+      - PMA_HOST=db # Aponta diretamente para o serviço do banco de dados acima
+      - PMA_USER=root
+      - PMA_PASSWORD=root_password
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:

@@ -1,0 +1,6 @@
+<script>
+ import { goto } from '$app/navigation'; import { api } from '$lib/api.js';
+ let nome=$state(''),email=$state(''),senha=$state(''),saldo=$state('0'),limite=$state('0'),erro=$state(''),salvando=$state(false);
+ async function salvar(){salvando=true;erro='';try{await api.clientes.create({name:nome,email,password:senha||undefined,saldo:Number(saldo),limite:Number(limite)});goto('/clientes');}catch(e){erro=e.message;}finally{salvando=false;}}
+</script>
+<div class="pagina admin-page"><div class="page-head"><div><span class="eyebrow">CLIENTES</span><h1>Novo cliente</h1></div></div>{#if erro}<div class="alert-error">{erro}</div>{/if}<div class="card-dash form-stack"><label>Nome<input bind:value={nome}/></label><label>E-mail<input bind:value={email} type="email"/></label><label>Senha <small>(deixe vazio para gerar automaticamente)</small><input bind:value={senha} type="password"/></label><label>Saldo inicial<input bind:value={saldo} type="number" min="0" step="0.01"/></label><label>Limite inicial<input bind:value={limite} type="number" min="0" step="0.01"/></label><div class="modal-actions"><button class="btn-secondary" onclick={() => goto('/clientes')}>Cancelar</button><button class="btn-primary" onclick={salvar} disabled={salvando}>{salvando?'Salvando...':'Criar cliente'}</button></div></div></div>
